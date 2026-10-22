@@ -1,0 +1,11 @@
+.pio/
+.vscode/
+
+# Local device and service configuration
+include/config/secrets.h
+
+# PlatformIO and local environment files
+*.local.ini
+.env
+.env.*
+!.env.example
