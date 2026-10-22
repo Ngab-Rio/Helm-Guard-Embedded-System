@@ -2,12 +2,14 @@
 
 #include "drivers/gps/gps.h"
 #include "drivers/buzzer/buzzer.h"
-#include "communications/wifi/wifi.h"
+#include "geofence/geofence.h"
 #include "communications/api/api.h"
 
-const unsigned long LOCATION_INTERVAL = 30000;
+constexpr unsigned long LOCATION_INTERVAL = 30000;
+constexpr unsigned long STATUS_INTERVAL = 1000;
 
 unsigned long lastLocationSend = 0;
+unsigned long lastStatusPrint = 0;
 bool firstLocationSend = true;
 
 void setup() {
@@ -15,49 +17,72 @@ void setup() {
 
     buzzerBegin();
     gpsHasBegin();
+    geofenceBegin();
     apiBegin();
 
-    Serial.println("Helm Guard started");
+    Serial.println("HelmGuard started");
+    Serial.println("Waiting for GPS fix...");
 }
 
 void loop() {
     gpsHasUpdate();
 
-    buzzerUpdate(gpsHasFix());
+    bool gpsFix = gpsHasFix();
+    bool outsideGeofence = false;
+
+    if (gpsFix) {
+        outsideGeofence = geofenceUpdate(
+            gpsGetLatitude(),
+            gpsGetLongitude()
+        );
+    }
+
+    buzzerUpdate(gpsFix, outsideGeofence);
 
     unsigned long now = millis();
 
-    if (firstLocationSend ||
-        now - lastLocationSend >= LOCATION_INTERVAL) {
+    if (now - lastStatusPrint >= STATUS_INTERVAL) {
+        lastStatusPrint = now;
 
-        firstLocationSend = false;
-        lastLocationSend = now;
-
-        if (gpsHasFix()) {
-            // Print GPS data to Serial
+        if (!gpsFix) {
+            Serial.println("GPS: NO FIX | Buzzer: INTERMITTENT");
+        } else {
             Serial.print("Latitude: ");
             Serial.println(gpsGetLatitude(), 6);
 
             Serial.print("Longitude: ");
             Serial.println(gpsGetLongitude(), 6);
 
-            Serial.print("Altitude: ");
-            Serial.println(gpsGetAltitude(), 2);
-
             Serial.print("Satellites: ");
             Serial.println(gpsGetSatellites());
 
-            Serial.print("Speed: ");
-            Serial.println(gpsGetSpeed(), 2);
+            Serial.print("Distance: ");
+            Serial.print(geofenceGetDistanceMeters(), 2);
+            Serial.println(" m");
 
-            // Send location to API
-            if (apiSendLocation()) {
-                Serial.println("Location sent successfully");
-            } else {
-                Serial.println("Failed to send location");
-            }
+            Serial.print("Geofence: ");
+            Serial.println(
+                outsideGeofence ? "OUTSIDE" : "INSIDE"
+            );
+
+            Serial.print("Buzzer: ");
+            Serial.println(
+                outsideGeofence ? "CONTINUOUS" : "OFF"
+            );
+        }
+    }
+
+    if (gpsFix &&
+        (firstLocationSend ||
+         now - lastLocationSend >= LOCATION_INTERVAL)) {
+
+        firstLocationSend = false;
+        lastLocationSend = now;
+
+        if (apiSendLocation()) {
+            Serial.println("Location sent successfully");
         } else {
-            Serial.println("No GPS fix available");
+            Serial.println("Failed to send location");
         }
     }
 

@@ -12,19 +12,29 @@ void buzzerBegin() {
     digitalWrite(BUZZER_PIN, LOW);
 }
 
-void buzzerUpdate(bool gpsFix) {
-    if (gpsFix) {
-        buzzerState = false;
-        digitalWrite(BUZZER_PIN, LOW);
+void buzzerUpdate(bool gpsFix, bool outsideGeofence) {
+    if (!gpsFix) {
+        unsigned long now = millis();
+
+        if (now - lastBuzzerChange >= BUZZER_INTERVAL) {
+            lastBuzzerChange = now;
+            buzzerState = !buzzerState;
+
+            digitalWrite(
+                BUZZER_PIN,
+                buzzerState ? HIGH : LOW
+            );
+        }
+
         return;
     }
 
-    unsigned long now = millis();
+    buzzerState = false;
+    lastBuzzerChange = millis();
 
-    if (now - lastBuzzerChange >= BUZZER_INTERVAL) {
-        lastBuzzerChange = now;
-        buzzerState = !buzzerState;
-
-        digitalWrite(BUZZER_PIN, buzzerState ? HIGH : LOW);
+    if (outsideGeofence) {
+        digitalWrite(BUZZER_PIN, HIGH);
+    } else {
+        digitalWrite(BUZZER_PIN, LOW);
     }
 }
