@@ -2,7 +2,7 @@
 
 #include "drivers/gps/gps.h"
 #include "drivers/buzzer/buzzer.h"
-#include "geofence/geofence.h"
+#include "geofences/geofence.h"
 #include "communications/api/api.h"
 
 constexpr unsigned long LOCATION_INTERVAL = 30000;
@@ -47,6 +47,7 @@ void loop() {
         if (!gpsFix) {
             Serial.println("GPS: NO FIX | Buzzer: INTERMITTENT");
         } else {
+            Serial.println("=============================");
             Serial.print("Latitude: ");
             Serial.println(gpsGetLatitude(), 6);
 

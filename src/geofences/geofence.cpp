@@ -7,7 +7,7 @@
 
 namespace {
     constexpr double EARTH_RADIUS_METERS = 6371000.0;
-    constexpr double DEG_TO_RAD = PI / 180.0;
+    constexpr double DEGREES_TO_RADIANS = PI / 180.0;
 
     bool initialized = false;
 
@@ -21,13 +21,16 @@ namespace {
         double lat2,
         double lon2
     ) {
-        double dLat = (lat2 - lat1) * DEG_TO_RAD;
-        double dLon = (lon2 - lon1) * DEG_TO_RAD;
+        double dLat =
+            (lat2 - lat1) * DEGREES_TO_RADIANS;
+
+        double dLon =
+            (lon2 - lon1) * DEGREES_TO_RADIANS;
 
         double a =
             sin(dLat / 2.0) * sin(dLat / 2.0) +
-            cos(lat1 * DEG_TO_RAD) *
-            cos(lat2 * DEG_TO_RAD) *
+            cos(lat1 * DEGREES_TO_RADIANS) *
+            cos(lat2 * DEGREES_TO_RADIANS) *
             sin(dLon / 2.0) * sin(dLon / 2.0);
 
         a = constrain(a, 0.0, 1.0);
@@ -56,6 +59,7 @@ bool geofenceUpdate(double latitude, double longitude) {
         initialized = true;
 
         Serial.println("Geofence center initialized");
+
         Serial.print("Center latitude: ");
         Serial.println(centerLatitude, 6);
 
